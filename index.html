@@ -1,40 +1,70 @@
-<!doctype html>
-<html class="no-js" lang="de">
+<!DOCTYPE html>
+<html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Weasel</title>
+  <meta charset="UTF-8">
+  <title>A N I</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
   <style>
-    body {font-size: 1.2em; padding:1em;background: #ECDBB8;color: #850C3A;}
+    body {
+      margin: 0;
+      background: black;
+      color: #00ff66;
+      font-family: monospace;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+    }
+
+    pre {
+      font-size: 14px;
+      line-height: 1.05;
+      white-space: pre;
+      user-select: none;
+    }
   </style>
 </head>
 <body>
-<pre>
 
-                             _ 
-                            | |
-__      _____  __ _ ___  ___| |
-\ \ /\ / / _ \/ _` / __|/ _ \ |
- \ V  V /  __/ (_| \__ \  __/ |
-  \_/\_/ \___|\__,_|___/\___|_|
-                               
+<pre id="ascii"></pre>
 
+<script>
+  const chars = " .:-=+*#%@█▓▒░";
+  const width = 80;
+  const height = 30;
+  let t = 0;
 
+  function frame() {
+    let output = "";
 
-                                _,-/"---,
-         ;"""""""""";         _/;; ""  <@`---v
-       ; :::::  ::  "\      _/ ;;  "    _.../
-      ;"     ;;  ;;;  \___/::    ;;,'""""
-     ;"          ;;;;.  ;;  ;;;  ::/
-    ,/ / ;;  ;;;______;;;  ;;; ::,/
-    /;;V_;;   ;;;       \       /
-    | :/ / ,/            \_ "")/
-    | | / /"""=            \;;\""=
-    ; ;{::""""""=            \"""=
- ;"""";
- \/"""                               
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        // smooth-ish motion using sine waves + randomness
+        const v =
+          Math.sin(x * 0.15 + t * 0.1) +
+          Math.cos(y * 0.15 + t * 0.13) +
+          Math.sin((x + y) * 0.1 + t * 0.07);
 
-</pre>
-<p>from https://ascii.co.uk/art/weasel</p>
+        const noise = (Math.random() - 0.5) * 0.8;
+        const value = v + noise;
+
+        const index = Math.floor(
+          ((value + 3) / 6) * (chars.length - 1)
+        );
+
+        output += chars[Math.max(0, Math.min(chars.length - 1, index))];
+      }
+      output += "\n";
+    }
+
+    document.getElementById("ascii").textContent = output;
+    t++;
+  }
+
+  // ~20 FPS
+  setInterval(frame, 50);
+</script>
+
 </body>
 </html>
