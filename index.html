@@ -60,6 +60,34 @@ function hash(x, y) {
   return ((x*374761393 + y*668265263) >>> 0) % 1000 / 1000;
 }
 
+// --- HISTORY ---
+const colorHistory = [];
+let historyIndex = -1;
+
+setColors(fgColor, bgColor);
+
+// --- update colors and push to history ---
+function setColors(fg, bg) {
+  fgColor = fg;
+  bgColor = bg;
+
+  // if we're not at the end, truncate forward history
+  if (historyIndex < colorHistory.length - 1) {
+    colorHistory.splice(historyIndex + 1);
+  }
+
+  colorHistory.push({ fg, bg });
+  if (colorHistory.length > 100) colorHistory.shift(); // keep max n
+  historyIndex = colorHistory.length - 1;
+}
+
+// --- override random color changes to go through history ---
+function applyRandomColors() {
+  const fg = randomColor();
+  const bg = randomColor();
+  setColors(fg, bg);
+}
+
 // generate random color in hex
 function randomColor() {
   const r = Math.floor(Math.random()*256);
@@ -68,15 +96,54 @@ function randomColor() {
   return `rgb(${r},${g},${b})`;
 }
 
-// change foreground & background color
-function changeColors() {
-  fgColor = randomColor();
-  bgColor = randomColor();
-}
+function forwardNavColor() {
+    if (historyIndex < colorHistory.length - 1) {
+      historyIndex++;
+      const { fg, bg } = colorHistory[historyIndex];
+      fgColor = fg;
+      bgColor = bg;
+    } else {
+      applyRandomColors();
+    }
+};
 
-window.addEventListener("resize", resize);
-window.addEventListener("keydown", e => { if(e.key==='c') changeColors(); });
-window.addEventListener("click", changeColors);
+function backwardNavColor() {
+    if (historyIndex > 0) {
+      historyIndex--;
+      const { fg, bg } = colorHistory[historyIndex];
+      fgColor = fg;
+      bgColor = bg;
+    }
+};
+
+// --- key handler ---
+window.addEventListener("keydown", e => {
+  if (e.key === "ArrowLeft") {
+    // LEFT: navigate back in history
+    backwardNavColor()
+  }
+});
+
+window.addEventListener("keydown", e => {
+  if (e.key === "ArrowRight") {
+    // RIGHT: navigate forward in history
+    forwardNavColor()
+  }
+});
+
+
+// --- mouse click handler for left/right navigation ---
+canvas.addEventListener("click", e => {
+  const x = e.clientX;
+
+  if (x < canvas.width / 2) {
+    // LEFT: navigate back in history
+    backwardNavColor()
+  } else {
+    // RIGHT: navigate forward in history or generate new
+    forwardNavColor();
+  }
+});
 
 function frame() {
   // --- compute global scale to fit overlay ---
