@@ -4,6 +4,7 @@
 <meta charset="UTF-8" />
 <title>5kohlers - welcome</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
 <style>
 html, body {
   margin: 0;
@@ -16,6 +17,7 @@ html, body {
 canvas { display: block; }
 </style>
 </head>
+
 <body>
 <canvas id="c"></canvas>
 
@@ -25,21 +27,26 @@ const ctx = canvas.getContext("2d");
 
 const chars = " .:-=+*#%@█▓▒░";
 
-// ASCII overlay text
-const overlayText = [
+let charWidth, charHeight;
+let cols, rows;
+let t = 0;
+
+let sinX = [];
+let cosY = [];
+
+// --- colors ---
+let fgColor = "#ff0000";
+let bgColor = "#000000";
+
+// --- ASCII overlay ---
+const overlay = [
 "888888P dP                dP       dP                            ",
 "88'     88                88       88                            ",
 "88baaa. 88  .dP  .d8888b. 88d888b. 88 .d8888b. 88d888b. .d8888b. ",
 "    `88 88888\"   88'  `88 88'  `88 88 88ooood8 88'  `88 Y8ooooo. ",
 "     88 88  `8b. 88.  .88 88    88 88 88.  ... 88             88 ",
-"d88888P dP   `YP `88888P' dP    dP dP `88888P' dP       `88888P' "
+"d88888P dP   `YP `88888P' dP    dP dP `88888P' dP       `88888P'  "
 ];
-
-let charWidth, charHeight;
-let cols, rows;
-let t = 0;
-let fgColor = "#ff0000";
-let bgColor = "black";
 
 function resize() {
   canvas.width = window.innerWidth;
@@ -53,6 +60,9 @@ function resize() {
 
   cols = Math.floor(canvas.width / charWidth);
   rows = Math.floor(canvas.height / charHeight);
+
+  sinX.length = cols;
+  cosY.length = rows;
 }
 
 // cheap hash for pseudo-random per-cell values
@@ -94,6 +104,14 @@ function randomColor() {
   const g = Math.floor(Math.random()*256);
   const b = Math.floor(Math.random()*256);
   return `rgb(${r},${g},${b})`;
+}
+
+// random color generator, maintaining min contrast
+function randomColorMinContrast() {
+  const h = Math.floor(Math.random() * 360);
+  const s = 70 + Math.random() * 30;
+  const l = 40 + Math.random() * 30;
+  return `hsl(${h}, ${s}%, ${l}%)`;
 }
 
 function forwardNavColor() {
@@ -146,63 +164,89 @@ canvas.addEventListener("click", e => {
 });
 
 function frame() {
-  // --- compute global scale to fit overlay ---
-  const overlayCols = overlayText[0].length;
-  const overlayRows = overlayText.length;
-  const scaleX = cols / overlayCols;
-  const scaleY = rows / overlayRows;
-  const scale = Math.min(scaleX, scaleY, 1); // don't upscale beyond 1
-
-  const scaledCharWidth = charWidth * scale;
-  const scaledCharHeight = charHeight * scale;
-  const scaledCols = Math.floor(cols / scale);
-  const scaledRows = Math.floor(rows / scale);
-  const cx = scaledCols/2;
-  const cy = scaledRows/2;
-
+  // background
   ctx.fillStyle = bgColor;
-  ctx.fillRect(0,0,canvas.width,canvas.height);
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
 
   const angle = t * 0.002;
   const speed = 0.06;
   const dx = Math.cos(angle) * speed;
   const dy = Math.sin(angle) * speed;
 
-  for(let y=0; y<scaledRows; y++){
+  for (let x = 0; x < cols; x++) sinX[x] = Math.sin(x*0.15 + t*0.1);
+  for (let y = 0; y < rows; y++) cosY[y] = Math.cos(y*0.15 + t*0.13);
+
+  const cx = cols / 2;
+  const cy = rows / 2;
+
+  ctx.fillStyle = fgColor;
+
+  // --- background pattern ---
+  for (let y = 0; y < rows; y++) {
     let row = "";
-    for(let x=0; x<scaledCols; x++){
-      const x0 = x-cx;
-      const y0 = y-cy;
-      const base = Math.sin(x*0.15 + t*0.1) + Math.cos(y*0.15 + t*0.13) + Math.sin((x+y)*0.1 + t*0.07);
-      const r = hash(x,y);
-      const micro = Math.sin(x*9.1 + y*4.7 + t*0.05 + r*6.28)*0.25 +
-                    Math.sin(x*2.3 + y*3.5 + t*0.1 + r*12.57)*0.15 +
-                    Math.sin(x*7.7 + y*5.1 + t*0.08 + r*3.14)*0.1;
-      let drifted = base + micro + dx*x0 + dy*y0;
-      const flatNoise = (Math.random()-0.5)*0.15;
-      drifted += flatNoise;
-      const value = Math.sign(drifted) * Math.pow(Math.abs(drifted), 1.2);
-      const index = Math.floor(((value+3)/6)*(chars.length-1));
-      row += chars[Math.max(0, Math.min(chars.length-1,index))];
+    const y0 = y - cy;
+    const cy0 = cosY[y];
+
+    for (let x = 0; x < cols; x++) {
+      const x0 = x - cx;
+
+      const base = sinX[x] + cy0 + Math.sin((x + y)*0.1 + t*0.07);
+
+      const r = hash(x, y);
+      const micro =
+        Math.sin(x*9.1 + y*4.7 + t*0.05 + r*6.28) * 0.25 +
+        Math.sin(x*2.3 + y*3.5 + t*0.1 + r*12.57) * 0.15 +
+        Math.sin(x*7.7 + y*5.1 + t*0.08 + r*3.14) * 0.1;
+
+      let v = base + micro + dx*x0 + dy*y0;
+      v += (Math.random() - 0.5) * 0.15;
+
+      const value = Math.sign(v) * Math.pow(Math.abs(v), 1.2);
+      const index = Math.floor(((value + 3) / 6) * (chars.length - 1));
+      row += chars[Math.max(0, Math.min(chars.length - 1, index))];
     }
-    ctx.save();
-    ctx.scale(scale, scale);
-    ctx.fillStyle = fgColor;
-    ctx.fillText(row,0,y*charHeight);
-    ctx.restore();
+    ctx.fillText(row, 0, y * charHeight);
   }
 
-  // --- overlay in slightly darker color ---
+  // --- centered, pattern-revealed overlay ---
+  //ctx.fillStyle = "#000000"; // static black
+  const maxLen = Math.max(...overlay.map(l => l.length));
+  const overlayWidth = maxLen * charWidth;
+  const overlayHeight = overlay.length * charHeight;
+
+  const ox = (canvas.width - overlayWidth) / 2;
+  const oy = (canvas.height - overlayHeight) / 2;
+
+  const revealThreshold = 0.9;
+  
   //ctx.globalAlpha = 0.6;
-  ctx.fillStyle = fgColor;
-  const startX = Math.floor((scaledCols-overlayCols)/2) * scaledCharWidth;
-  const startY = Math.floor((scaledRows-overlayRows)/2) * scaledCharHeight;
-  ctx.save();
-  ctx.scale(scale, scale);
-  for(let i=0; i<overlayText.length; i++){
-    ctx.fillText(overlayText[i], startX/scale, startY/scale + i*charHeight);
+  //ctx.fillStyle = fgColor;
+
+  for (let ly = 0; ly < overlay.length; ly++) {
+    const line = overlay[ly];
+    const gy = Math.floor((oy + ly * charHeight) / charHeight);
+    if (gy < 0 || gy >= rows) continue;
+
+    let out = "";
+    for (let i = 0; i < line.length; i++) {
+      const gx = Math.floor((ox + i * charWidth) / charWidth);
+      if (gx < 0 || gx >= cols || line[i] === " ") {
+        out += " ";
+        continue;
+      }
+
+      const strength = Math.abs(
+        sinX[gx] +
+        cosY[gy] +
+        Math.sin((gx + gy)*0.1 + t*0.07)
+      );
+
+      out += strength > revealThreshold ? line[i] : " ";
+    }
+
+    ctx.fillText(out, ox, oy + ly * charHeight);
   }
-  ctx.restore();
+  
   //ctx.globalAlpha = 1;
 
   t++;
@@ -210,6 +254,7 @@ function frame() {
 }
 
 resize();
+window.addEventListener("resize", resize);
 frame();
 </script>
 </body>
