@@ -126,7 +126,7 @@ function frame() {
   }
 
   // --- overlay in slightly darker color ---
-  ctx.globalAlpha = 0.6;
+  //ctx.globalAlpha = 0.6;
   ctx.fillStyle = fgColor;
   const startX = Math.floor((scaledCols-overlayCols)/2) * scaledCharWidth;
   const startY = Math.floor((scaledRows-overlayRows)/2) * scaledCharHeight;
@@ -136,7 +136,7 @@ function frame() {
     ctx.fillText(overlayText[i], startX/scale, startY/scale + i*charHeight);
   }
   ctx.restore();
-  ctx.globalAlpha = 1;
+  //ctx.globalAlpha = 1;
 
   t++;
   requestAnimationFrame(frame);
