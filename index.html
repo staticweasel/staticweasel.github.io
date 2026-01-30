@@ -48,7 +48,40 @@ const overlay = [
 "d88888P dP   `YP `88888P' dP    dP dP `88888P' dP       `88888P'  "
 ];
 
+
+
+let globalScale = 1;
+
 function resize() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+
+  // --- compute scale if screen is narrow ---
+  const threshold = 550; // px
+  if (canvas.width < threshold) {
+    globalScale = canvas.width / threshold; // scale < 1
+  } else {
+    globalScale = 1;
+  }
+
+  ctx.setTransform(globalScale, 0, 0, globalScale, 0, 0); // apply scale
+
+  ctx.font = "14px monospace";
+  ctx.textBaseline = "top";
+
+  charWidth = ctx.measureText("X").width;
+  charHeight = 13;
+
+  cols = Math.floor(canvas.width / charWidth);
+  rows = Math.floor(canvas.height / charHeight);
+
+  sinX.length = cols;
+  cosY.length = rows;
+}
+
+
+
+function resize_backup() {
   canvas.width = window.innerWidth;
   canvas.height = window.innerHeight;
 
