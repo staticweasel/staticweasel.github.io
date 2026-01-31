@@ -48,9 +48,25 @@ const overlay = [
 "d88888P dP   `YP `88888P' dP    dP dP `88888P' dP       `88888P'  "
 ];
 
+const overlay_wrap = [
+"888888P dP                dP      ",
+"88'     88                88      ",
+"88baaa. 88  .dP  .d8888b. 88d888b.",
+"    `88 88888\"   88'  `88 88'  `88",
+"     88 88  `8b. 88.  .88 88    88 ",
+"d88888P dP   `YP `88888P' dP    dP ",
+" ",
+"  dP                            ",
+"  88                            ",
+"  88 .d8888b. 88d888b. .d8888b. ",
+"  88 88ooood8 88'  `88 Y8ooooo. ",
+"  88 88.  ... 88             88 ",
+"  dP `88888P' dP       `88888P'  "
+];
 
+let overlay_used = overlay;
 
-let globalScale = 1;
+//let globalScale = 1;
 
 function resize() {
   canvas.width = window.innerWidth;
@@ -59,12 +75,14 @@ function resize() {
   // --- compute scale if screen is narrow ---
   const threshold = 550; // px
   if (canvas.width < threshold) {
-    globalScale = canvas.width / threshold; // scale < 1
+    //globalScale = canvas.width / threshold; // scale < 1
+	overlay_used = overlay_wrap;
   } else {
-    globalScale = 1;
+    //globalScale = 1;
+	overlay_used = overlay;
   }
 
-  ctx.setTransform(globalScale, 0, 0, globalScale, 0, 0); // apply scale
+  //ctx.setTransform(globalScale, 0, 0, globalScale, 0, 0); // apply scale
 
   ctx.font = "14px monospace";
   ctx.textBaseline = "top";
@@ -243,9 +261,9 @@ function frame() {
 
   // --- centered, pattern-revealed overlay ---
   //ctx.fillStyle = "#000000"; // static black
-  const maxLen = Math.max(...overlay.map(l => l.length));
+  const maxLen = Math.max(...overlay_used.map(l => l.length));
   const overlayWidth = maxLen * charWidth;
-  const overlayHeight = overlay.length * charHeight;
+  const overlayHeight = overlay_used.length * charHeight;
 
   const ox = (canvas.width - overlayWidth) / 2;
   const oy = (canvas.height - overlayHeight) / 2;
@@ -255,8 +273,8 @@ function frame() {
   //ctx.globalAlpha = 0.6;
   //ctx.fillStyle = fgColor;
 
-  for (let ly = 0; ly < overlay.length; ly++) {
-    const line = overlay[ly];
+  for (let ly = 0; ly < overlay_used.length; ly++) {
+    const line = overlay_used[ly];
     const gy = Math.floor((oy + ly * charHeight) / charHeight);
     if (gy < 0 || gy >= rows) continue;
 
