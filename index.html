@@ -73,10 +73,13 @@ function resize() {
   canvas.height = window.innerHeight;
 
   // --- compute scale if screen is narrow ---
-  const threshold = 550; // px
+  const threshold = 650; // px
   if (canvas.width < threshold) {
     //globalScale = canvas.width / threshold; // scale < 1
 	overlay_used = overlay_wrap;
+	document.querySelector("meta[name=viewport]").setAttribute(
+          'content', 
+          'width=device-width, initial-scale=0.65'); // only respected by mobile clients
   } else {
     //globalScale = 1;
 	overlay_used = overlay;
